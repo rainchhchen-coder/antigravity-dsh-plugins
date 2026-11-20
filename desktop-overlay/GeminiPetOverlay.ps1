@@ -47,10 +47,10 @@ public static class WindowTracker {
     public static bool TryGetAntigravityRect(out RECT bestRect, out bool isMinimized) {
         bestRect = new RECT();
         isMinimized = false;
-        IntPtr found = IntPtr.Zero;
+        IntPtr foundVisible = IntPtr.Zero;
         int bestArea = 0;
-        RECT foundRect = new RECT();
-        bool foundMin = false;
+        RECT visibleRect = new RECT();
+        bool anyMinimized = false;
 
         EnumWindows((hWnd, lParam) => {
             if (!IsWindowVisible(hWnd)) return true;
@@ -60,24 +60,32 @@ public static class WindowTracker {
             if (string.IsNullOrEmpty(title)) return true;
             if (title.IndexOf("Antigravity", StringComparison.OrdinalIgnoreCase) >= 0 &&
                 title.IndexOf("GeminiPetOverlay", StringComparison.OrdinalIgnoreCase) < 0) {
-                bool min = IsIconic(hWnd);
+                if (IsIconic(hWnd)) {
+                    anyMinimized = true;
+                    return true;
+                }
                 RECT r;
                 if (GetWindowRect(hWnd, out r)) {
-                    int area = Math.Max(0, r.Right - r.Left) * Math.Max(0, r.Bottom - r.Top);
-                    if (min || area > bestArea) {
+                    int w = r.Right - r.Left;
+                    int h = r.Bottom - r.Top;
+                    int area = Math.Max(0, w) * Math.Max(0, h);
+                    if (w >= 300 && h >= 200 && area > bestArea) {
                         bestArea = area;
-                        found = hWnd;
-                        foundRect = r;
-                        foundMin = min;
+                        foundVisible = hWnd;
+                        visibleRect = r;
                     }
                 }
             }
             return true;
         }, IntPtr.Zero);
 
-        if (found != IntPtr.Zero) {
-            bestRect = foundRect;
-            isMinimized = foundMin;
+        if (foundVisible != IntPtr.Zero) {
+            bestRect = visibleRect;
+            isMinimized = false;
+            return true;
+        }
+        if (anyMinimized) {
+            isMinimized = true;
             return true;
         }
         return false;
