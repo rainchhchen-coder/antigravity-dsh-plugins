@@ -12,6 +12,7 @@
 > | [`antigravity-better-sidebar`](./plugins/antigravity-better-sidebar) | [omdsh-dev/DSH-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) | MIT | 模仿其开放式侧边栏底座、第三方页签注册、文件浏览编辑/终端/Git 集成理念 |
 > | [`antigravity-balance-widget`](./plugins/antigravity-balance-widget) | [MeteorNOX/DeepSeek-Balance-Whale-Widget](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget) | MIT | 模仿其 QQ 弹弹小鲸鱼、拖拽吸附、左吸附镜像翻转、数字滚动动画与余额监控交互 |
 > | [`antigravity-gemini-pet`](./plugins/antigravity-gemini-pet) | [PC2005-cloud/dsh-pet](https://github.com/PC2005-cloud/dsh-pet) | Open Source | 模仿其互动桌宠物理（拖拽惯性/投掷弹跳/漫步/投喂/DIY皮肤），角色为原创 Q 版 Gemini 娘 |
+| [`desktop-overlay`](./desktop-overlay) | [PC2005-cloud/dsh-pet](https://github.com/PC2005-cloud/dsh-pet) | Open Source | **Windows 原生透明无边框桌面悬浮宠**：自动吸附在 Antigravity 窗口右下角、零侵入、0 Token 消耗 |
 > | *(未改写，见说明)* | [elysia395/dsh-wallpaper-engine](https://github.com/elysia395/dsh-wallpaper-engine) | MIT | 详见下方[可行性说明](#为什么未改写-dsh-wallpaper-engine) |
 
 ---
