@@ -1,0 +1,8 @@
+{
+  "name": "antigravity-balance-widget",
+  "displayName": "Balance Whale Widget",
+  "version": "1.0.0",
+  "description": "QQ 弹弹的小鲸鱼 API 余额监控挂件（灵感源自 MeteorNOX/DeepSeek-Balance-Whale-Widget）：支持自由拖拽、左右贴边吸附与左吸附镜像翻转、数字滚动动画、DeepSeek/自定义账单接口安全查询，零 LLM Token 消耗。",
+  "logo": "assets/logo.svg",
+  "author": "Community Port (Inspired by MeteorNOX/DeepSeek-Balance-Whale-Widget)"
+}

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Better Sidebar — Antigravity</title>
+  <script src="/preload.js"></script>
+  <style>
+    :root {
+      --bg: var(--background, #f7f7f9);
+      --card: var(--card, #ffffff);
+      --fg: var(--foreground, #1d1f21);
+      --muted: var(--muted-foreground, #64748b);
+      --border: var(--border, rgba(15, 23, 42, 0.1));
+      --primary: var(--primary, #6366f1);
+      --primary-fg: var(--primary-foreground, #ffffff);
+      --surface: var(--muted, #eef0f4);
+      --mono: var(--editor-font-family, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+      --font: var(--font-family, system-ui, -apple-system, "Segoe UI", sans-serif);
+    }
+    :root[data-theme="dark"] {
+      --bg: var(--background, #111318);
+      --card: var(--card, #181b22);
+      --fg: var(--foreground, #e5e7eb);
+      --muted: var(--muted-foreground, #94a3b8);
+      --border: var(--border, rgba(255, 255, 255, 0.1));
+      --surface: var(--muted, #222631);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      background: var(--bg); color: var(--fg);
+      font-family: var(--font); font-size: 13px;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    header {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 10px; border-bottom: 1px solid var(--border);
+      background: var(--card); flex-wrap: wrap;
+    }
+    .brand { font-weight: 700; font-size: 13px; margin-right: 4px; display: flex; align-items: center; gap: 6px; }
+    .badge {
+      font-size: 10px; padding: 2px 6px; border-radius: 999px;
+      background: color-mix(in srgb, var(--primary) 14%, transparent);
+      color: var(--primary); font-weight: 600;
+    }
+    .tabs { display: flex; gap: 4px; flex: 1; overflow-x: auto; }
+    .tab-btn {
+      border: 1px solid transparent; background: transparent; color: var(--muted);
+      padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;
+      white-space: nowrap; transition: all 0.15s;
+    }
+    .tab-btn:hover { background: var(--surface); color: var(--fg); }
+    .tab-btn.active { background: var(--primary); color: var(--primary-fg); font-weight: 600; }
+    main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    .pane { display: none; flex: 1; overflow: hidden; height: 100%; }
+    .pane.active { display: flex; flex-direction: column; }
+
+    /* Files pane */
+    .split { display: flex; flex: 1; overflow: hidden; }
+    .tree {
+      width: 210px; min-width: 150px; border-right: 1px solid var(--border);
+      overflow-y: auto; padding: 8px; background: var(--card);
+    }
+    .tree-item {
+      padding: 4px 6px; border-radius: 5px; cursor: pointer;
+      display: flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .tree-item:hover { background: var(--surface); }
+    .tree-item.selected { background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary); font-weight: 600; }
+    .editor-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .toolbar {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 6px 10px; border-bottom: 1px solid var(--border); background: var(--card);
+    }
+    .toolbar input[type="text"] {
+      flex: 1; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--fg); font-size: 12px;
+    }
+    button.btn {
+      border: 1px solid var(--border); background: var(--card); color: var(--fg);
+      padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;
+    }
+    button.btn.primary { background: var(--primary); color: var(--primary-fg); border-color: transparent; }
+    button.btn:hover { opacity: 0.9; }
+    textarea.code-editor {
+      flex: 1; width: 100%; border: none; outline: none; resize: none;
+      padding: 12px; background: var(--bg); color: var(--fg);
+      font-family: var(--mono); font-size: 12.5px; line-height: 1.55;
+    }
+    .md-preview {
+      flex: 1; overflow-y: auto; padding: 14px; line-height: 1.65;
+    }
+    .md-preview pre { background: var(--surface); padding: 10px; border-radius: 8px; overflow-x: auto; font-family: var(--mono); }
+    .md-preview code { background: var(--surface); padding: 1px 4px; border-radius: 4px; font-family: var(--mono); }
+
+    /* Terminal pane */
+    .term-out {
+      flex: 1; overflow-y: auto; padding: 12px; font-family: var(--mono); font-size: 12px;
+      background: #0d1117; color: #e6edf3; white-space: pre-wrap; word-break: break-all;
+    }
+    .term-input-row { display: flex; gap: 6px; padding: 8px; background: var(--card); border-top: 1px solid var(--border); }
+    .term-input-row input {
+      flex: 1; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--fg); font-family: var(--mono); font-size: 12px;
+    }
+
+    /* Git & Extensions */
+    .scroll-pad { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px;
+    }
+    .diff-box {
+      font-family: var(--mono); font-size: 11.5px; white-space: pre-wrap; overflow-x: auto;
+      background: var(--bg); padding: 10px; border-radius: 8px; max-height: 260px; overflow-y: auto;
+    }
+    .ext-form { display: grid; gap: 8px; }
+    .ext-form input, .ext-form select, .ext-form textarea {
+      width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--fg); font-size: 12px;
+    }
+    iframe.ext-frame { width: 100%; height: 100%; border: none; background: #fff; }
+    footer {
+      padding: 4px 10px; font-size: 11px; color: var(--muted);
+      border-top: 1px solid var(--border); background: var(--card);
+      display: flex; justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="brand">📐 Better Sidebar <span class="badge">0 Token</span></span>
+    <nav class="tabs" id="tabs">
+      <button class="tab-btn active" data-tab="files">📁 文件</button>
+      <button class="tab-btn" data-tab="terminal">💻 终端</button>
+      <button class="tab-btn" data-tab="git">🔀 Git</button>
+      <button class="tab-btn" data-tab="extensions">🧩 扩展底座</button>
+    </nav>
+  </header>
+
+  <main id="main">
+    <!-- 文件浏览与编辑 -->
+    <section class="pane active" id="pane-files">
+      <div class="toolbar">
+        <input id="ws-input" type="text" placeholder="工作区绝对路径..." />
+        <button class="btn" id="ws-apply">切换目录</button>
+        <button class="btn" id="files-refresh">刷新</button>
+      </div>
+      <div class="split">
+        <div class="tree" id="file-tree">加载中...</div>
+        <div class="editor-area">
+          <div class="toolbar">
+            <span id="cur-file" style="color:var(--muted);overflow:hidden;text-overflow:ellipsis;">未打开文件</span>
+            <div style="display:flex;gap:6px;">
+              <button class="btn" id="toggle-preview" style="display:none;">切换预览</button>
+              <button class="btn primary" id="save-file" disabled>保存</button>
+            </div>
+          </div>
+          <textarea class="code-editor" id="code-editor" placeholder="点击左侧文件开始查看或编辑..."></textarea>
+          <div class="md-preview" id="md-preview" style="display:none;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 终端 -->
+    <section class="pane" id="pane-terminal">
+      <div class="term-out" id="term-out">Better Sidebar 工作区终端已就绪（输入命令按回车执行）\n</div>
+      <div class="term-input-row">
+        <input id="term-cmd" type="text" placeholder="例如：node -v / dir / ls -la" />
+        <button class="btn primary" id="term-run">运行</button>
+        <button class="btn" id="term-clear">清空</button>
+      </div>
+    </section>
+
+    <!-- Git -->
+    <section class="pane" id="pane-git">
+      <div class="toolbar">
+        <span id="git-branch" style="font-weight:600;">Git 状态</span>
+        <button class="btn" id="git-refresh">刷新</button>
+      </div>
+      <div class="scroll-pad" id="git-body">点击刷新加载 Git 状态...</div>
+    </section>
+
+    <!-- 第三方扩展页签底座 -->
+    <section class="pane" id="pane-extensions">
+      <div class="scroll-pad">
+        <div class="card">
+          <h3 style="margin:0 0 6px 0;">🧩 开放式扩展页签注册</h3>
+          <p style="margin:0 0 10px 0;color:var(--muted);">模仿 DSH-better-sidebar 的开放底座，可在此注册新的自定义侧边栏页签（保存为 <code>extensions/*.json</code>）。</p>
+          <div class="ext-form">
+            <input id="ext-id" placeholder="唯一 ID（英文/数字/连字符，例如 my-notes）" />
+            <input id="ext-title" placeholder="页签名称（例如 备忘录）" />
+            <select id="ext-type">
+              <option value="markdown">Markdown 文档页</option>
+              <option value="iframe">嵌入外部/本地网页 (iframe)</option>
+              <option value="html">自定义 HTML 片段</option>
+            </select>
+            <input id="ext-url" placeholder="iframe URL（例如 http://localhost:3000）" style="display:none;" />
+            <textarea id="ext-content" rows="4" placeholder="Markdown 或 HTML 内容..."></textarea>
+            <button class="btn primary" id="ext-add">注册为新页签</button>
+          </div>
+        </div>
+        <div class="card">
+          <h4 style="margin:0 0 8px 0;">已注册扩展页签</h4>
+          <div id="ext-list"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span id="status-text">就绪</span>
+    <span>Inspired by omdsh-dev/DSH-better-sidebar (MIT)</span>
+  </footer>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let currentFile = null;
+    let previewMode = false;
+
+    function setStatus(msg) { $('status-text').textContent = msg; }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tabId));
+      document.querySelectorAll('.pane').forEach((p) => p.classList.toggle('active', p.id === `pane-${tabId}`));
+      if (tabId === 'git') loadGit();
+    }
+
+    $('tabs').addEventListener('click', (e) => {
+      const btn = e.target.closest('.tab-btn');
+      if (btn) switchTab(btn.dataset.tab);
+    });
+
+    // 简单 Markdown 渲染（零外部依赖）
+    function renderMd(md) {
+      return md
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+        .replace(/^### (.*)$/gm, '<h3>$1</h3>')
+        .replace(/^## (.*)$/gm, '<h2>$1</h2>')
+        .replace(/^# (.*)$/gm, '<h1>$1</h1>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+        .replace(/\n/g, '<br>');
+    }
+
+    // 文件树
+    function renderTree(nodes, depth = 0) {
+      const frag = document.createDocumentFragment();
+      for (const n of nodes) {
+        const div = document.createElement('div');
+        div.className = 'tree-item' + (currentFile === n.path ? ' selected' : '');
+        div.style.paddingLeft = `${6 + depth * 12}px`;
+        div.textContent = (n.kind === 'dir' ? '📂 ' : '📄 ') + n.name;
+        if (n.kind === 'file') {
+          div.onclick = () => openFile(n.path);
+        }
+        frag.appendChild(div);
+        if (n.children && n.children.length) {
+          frag.appendChild(renderTree(n.children, depth + 1));
+        }
+      }
+      return frag;
+    }
+
+    async function loadFiles() {
+      const res = await fetch('/api/files').then((r) => r.json());
+      $('ws-input').value = res.workspaceRoot || '';
+      const tree = $('file-tree');
+      tree.innerHTML = '';
+      tree.appendChild(renderTree(res.tree || []));
+      setStatus(`工作区: ${res.workspaceRoot}`);
+    }
+
+    async function openFile(path) {
+      const res = await fetch('/api/file?path=' + encodeURIComponent(path)).then((r) => r.json());
+      if (!res.ok) { setStatus(res.error || '打开失败'); return; }
+      currentFile = path;
+      $('cur-file').textContent = path;
+      $('code-editor').value = res.content;
+      $('save-file').disabled = false;
+      const isMd = res.ext === '.md';
+      $('toggle-preview').style.display = isMd ? 'inline-block' : 'none';
+      previewMode = false;
+      $('code-editor').style.display = 'block';
+      $('md-preview').style.display = 'none';
+      loadFiles();
+    }
+
+    $('toggle-preview').onclick = () => {
+      previewMode = !previewMode;
+      if (previewMode) {
+        $('md-preview').innerHTML = renderMd($('code-editor').value);
+        $('md-preview').style.display = 'block';
+        $('code-editor').style.display = 'none';
+      } else {
+        $('md-preview').style.display = 'none';
+        $('code-editor').style.display = 'block';
+      }
+    };
+
+    $('save-file').onclick = async () => {
+      if (!currentFile) return;
+      const res = await fetch('/api/file/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: currentFile, content: $('code-editor').value }),
+      }).then((r) => r.json());
+      setStatus(res.ok ? `已保存 ${currentFile} (${res.bytes} bytes)` : `保存失败: ${res.error}`);
+    };
+
+    $('ws-apply').onclick = async () => {
+      const res = await fetch('/api/workspace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ root: $('ws-input').value.trim() }),
+      }).then((r) => r.json());
+      setStatus(res.ok ? `已切换工作区: ${res.workspaceRoot}` : res.error);
+      loadFiles();
+    };
+    $('files-refresh').onclick = loadFiles;
+
+    // 终端
+    async function runCmd() {
+      const cmd = $('term-cmd').value.trim();
+      if (!cmd) return;
+      $('term-cmd').value = '';
+      const out = $('term-out');
+      out.textContent += `\n$ ${cmd}\n`;
+      const res = await fetch('/api/terminal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: cmd }),
+      }).then((r) => r.json());
+      if (res.stdout) out.textContent += res.stdout;
+      if (res.stderr) out.textContent += res.stderr;
+      out.textContent += `\n[exit ${res.code}]\n`;
+      out.scrollTop = out.scrollHeight;
+    }
+    $('term-run').onclick = runCmd;
+    $('term-cmd').addEventListener('keydown', (e) => { if (e.key === 'Enter') runCmd(); });
+    $('term-clear').onclick = () => { $('term-out').textContent = ''; };
+
+    // Git
+    async function loadGit() {
+      const res = await fetch('/api/git/status').then((r) => r.json());
+      const body = $('git-body');
+      if (!res.available || !res.isRepo) {
+        $('git-branch').textContent = 'Git 不可用';
+        body.innerHTML = `<div class="card">${res.reason}</div>`;
+        return;
+      }
+      $('git-branch').textContent = `分支: ${res.branch}`;
+      const filesHtml = res.files.length
+        ? res.files.map((f) => `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);"><span><code>${f.code}</code> ${f.path}</span><button class="btn" onclick="viewDiff('${f.path.replace(/'/g, "\\'")}')">Diff</button></div>`).join('')
+        : '<div style="color:var(--muted);">工作区干净</div>';
+      const commitsHtml = res.commits.map((c) => `<div style="font-family:var(--mono);font-size:11.5px;padding:2px 0;">${c}</div>`).join('');
+      body.innerHTML = `
+        <div class="card"><strong>变更文件 (${res.files.length})</strong><div style="margin-top:6px;">${filesHtml}</div></div>
+        <div class="card"><strong>差异预览</strong><div id="git-diff" class="diff-box" style="margin-top:6px;">点击文件右侧 Diff 按钮查看差异</div></div>
+        <div class="card"><strong>最近提交</strong><div style="margin-top:6px;">${commitsHtml}</div></div>
+      `;
+    }
+    window.viewDiff = async (path) => {
+      const res = await fetch('/api/git/diff?path=' + encodeURIComponent(path)).then((r) => r.json());
+      $('git-diff').textContent = res.diff || '(无差异)';
+    };
+    $('git-refresh').onclick = loadGit;
+
+    // 开放扩展页签
+    $('ext-type').onchange = () => {
+      const isIframe = $('ext-type').value === 'iframe';
+      $('ext-url').style.display = isIframe ? 'block' : 'none';
+      $('ext-content').style.display = isIframe ? 'none' : 'block';
+    };
+
+    async function loadExtensions() {
+      const { extensions } = await fetch('/api/extensions').then((r) => r.json());
+      document.querySelectorAll('.ext-dynamic-tab, .ext-dynamic-pane').forEach((el) => el.remove());
+      const list = $('ext-list');
+      list.innerHTML = '';
+      for (const ext of extensions) {
+        // 顶部动态页签按钮
+        const btn = document.createElement('button');
+        btn.className = 'tab-btn ext-dynamic-tab';
+        btn.dataset.tab = `ext-${ext.id}`;
+        btn.textContent = `${ext.icon || '🧩'} ${ext.title}`;
+        $('tabs').appendChild(btn);
+
+        // 动态页签内容
+        const pane = document.createElement('section');
+        pane.className = 'pane ext-dynamic-pane';
+        pane.id = `pane-ext-${ext.id}`;
+        if (ext.type === 'iframe') {
+          pane.innerHTML = `<iframe class="ext-frame" src="${ext.url}" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>`;
+        } else if (ext.type === 'html') {
+          pane.innerHTML = `<div class="scroll-pad">${ext.content || ''}</div>`;
+        } else {
+          pane.innerHTML = `<div class="md-preview">${renderMd(ext.content || '')}</div>`;
+        }
+        $('main').appendChild(pane);
+
+        // 列表项
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);';
+        row.innerHTML = `<span>${ext.icon || '🧩'} <strong>${ext.title}</strong> <code style="color:var(--muted)">(${ext.type})</code></span>`;
+        const del = document.createElement('button');
+        del.className = 'btn';
+        del.textContent = '移除';
+        del.onclick = async () => {
+          await fetch('/api/extensions/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: ext.id }),
+          });
+          loadExtensions();
+        };
+        row.appendChild(del);
+        list.appendChild(row);
+      }
+    }
+
+    $('ext-add').onclick = async () => {
+      const res = await fetch('/api/extensions/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: $('ext-id').value.trim(),
+          title: $('ext-title').value.trim(),
+          type: $('ext-type').value,
+          url: $('ext-url').value.trim(),
+          content: $('ext-content').value,
+        }),
+      }).then((r) => r.json());
+      if (res.ok) {
+        $('ext-id').value = ''; $('ext-title').value = ''; $('ext-url').value = ''; $('ext-content').value = '';
+        loadExtensions();
+        setStatus('已注册新扩展页签');
+      } else {
+        setStatus(res.error || '注册失败');
+      }
+    };
+
+    loadFiles();
+    loadExtensions();
+  </script>
+</body>
+</html>

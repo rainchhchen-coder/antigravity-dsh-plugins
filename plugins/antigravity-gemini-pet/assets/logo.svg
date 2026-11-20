@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="gbg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="50%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+  </defs>
+  <rect x="14" y="14" width="100" height="100" rx="26" fill="url(#gbg)"/>
+  <!-- 猫耳 -->
+  <polygon points="34,46 44,24 58,42" fill="#f5f3ff"/>
+  <polygon points="94,46 84,24 70,42" fill="#f5f3ff"/>
+  <!-- 头部 -->
+  <circle cx="64" cy="68" r="30" fill="#ffffff"/>
+  <!-- 异瞳：左粉右金 -->
+  <circle cx="52" cy="68" r="6" fill="#ec4899"/>
+  <circle cx="76" cy="68" r="6" fill="#f59e0b"/>
+  <circle cx="50" cy="66" r="2" fill="#ffffff"/>
+  <circle cx="74" cy="66" r="2" fill="#ffffff"/>
+  <!-- 微笑 -->
+  <path d="M58 78 Q64 84 70 78" stroke="#6d28d9" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+  <!-- 四芒星 -->
+  <path d="M90 36 L93 44 L101 47 L93 50 L90 58 L87 50 L79 47 L87 44 Z" fill="#fde047"/>
+</svg>

@@ -1,0 +1,21 @@
+{
+  "command": "node",
+  "args": ["main.mjs"],
+  "restart_policy": "on-failure",
+  "display_name": "Better Sidebar",
+  "description": "开放式侧边栏底座：文件渲染/编辑、终端、Git、第三方扩展页签注册（灵感源自 omdsh-dev/DSH-better-sidebar）。",
+  "has_web_ui": true,
+  "agent_permissions": {
+    "allows_user_interactions": false
+  },
+  "ui_config": {
+    "display_name": "Better Sidebar",
+    "views": [
+      {
+        "path": "/",
+        "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
+        "title": "Better Sidebar"
+      }
+    ]
+  }
+}

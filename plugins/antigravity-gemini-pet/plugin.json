@@ -1,0 +1,8 @@
+{
+  "name": "antigravity-gemini-pet",
+  "displayName": "Gemini 娘桌面宠物",
+  "version": "1.0.0",
+  "description": "原创 Q 版 Gemini 娘（紫蓝猫耳异瞳星芒）互动桌面宠物插件（灵感源自 PC2005-cloud/dsh-pet）：支持拖拽惯性投掷弹跳、自动漫步、摸头投喂、实时同步 Antigravity Agent 状态（思考/写代码/待机/低电量）与 DIY 自定义皮肤，零额外 Token 消耗。",
+  "logo": "assets/logo.svg",
+  "author": "Community Port (Inspired by PC2005-cloud/dsh-pet)"
+}

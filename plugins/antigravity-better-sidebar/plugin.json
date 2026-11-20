@@ -1,0 +1,8 @@
+{
+  "name": "antigravity-better-sidebar",
+  "displayName": "Better Sidebar",
+  "version": "1.0.0",
+  "description": "开放式侧边栏工作台底座（灵感源自 DSH-better-sidebar）：内置文件浏览编辑与 Markdown 预览、工作区终端、Git 状态与 Diff，并支持第三方扩展注册自定义页签。纯本地 Sidecar，零额外 Token 消耗。",
+  "logo": "assets/logo.svg",
+  "author": "Community Port (Inspired by omdsh-dev/DSH-better-sidebar)"
+}

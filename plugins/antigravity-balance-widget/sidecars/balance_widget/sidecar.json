@@ -1,0 +1,21 @@
+{
+  "command": "node",
+  "args": ["main.mjs"],
+  "restart_policy": "on-failure",
+  "display_name": "Balance Whale Widget",
+  "description": "QQ 弹弹的小鲸鱼 API 余额监控挂件（灵感源自 DeepSeek-Balance-Whale-Widget），支持拖拽吸附、左吸附镜像翻转与滚动数字动画。",
+  "has_web_ui": true,
+  "agent_permissions": {
+    "allows_user_interactions": false
+  },
+  "ui_config": {
+    "display_name": "Balance Whale",
+    "views": [
+      {
+        "path": "/",
+        "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
+        "title": "Balance Whale"
+      }
+    ]
+  }
+}

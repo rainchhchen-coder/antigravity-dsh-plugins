@@ -1,0 +1,8 @@
+{
+  "id": "antigravity-docs",
+  "title": "AGY 文档",
+  "icon": "📚",
+  "type": "markdown",
+  "description": "第三方扩展页签示例：展示如何在 extensions/ 目录注册自定义侧边栏页面",
+  "content": "# 开放式侧边栏扩展规范\n\n在 `extensions/` 目录下放置任意 `.json` 文件，刷新即可自动注册为新页签。\n\n## 支持的扩展类型\n\n1. **`markdown`**：渲染静态 Markdown 指南或项目看板\n2. **`iframe`**：嵌入本地开发服务器（例如 `http://localhost:3000`）\n3. **`html`**：内嵌轻量自定义 HTML 卡片\n\n## 示例配置\n\n```json\n{\n  \"id\": \"local-dev\",\n  \"title\": \"本地预览\",\n  \"icon\": \"🌐\",\n  \"type\": \"iframe\",\n  \"url\": \"http://localhost:5173\"\n}\n```\n\n> 灵感致谢：本侧边栏底座设计参考了 [omdsh-dev/DSH-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar)（MIT License）。"
+}

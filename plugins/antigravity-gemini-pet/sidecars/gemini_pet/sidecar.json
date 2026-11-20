@@ -1,0 +1,21 @@
+{
+  "command": "node",
+  "args": ["main.mjs"],
+  "restart_policy": "on-failure",
+  "display_name": "Gemini 娘桌宠",
+  "description": "原创 Q 版 Gemini 娘互动宠物（灵感源自 PC2005-cloud/dsh-pet），支持物理拖拽弹跳、摸头投喂、实时同步 Agent 思考/编码状态与 DIY 皮肤。",
+  "has_web_ui": true,
+  "agent_permissions": {
+    "allows_user_interactions": false
+  },
+  "ui_config": {
+    "display_name": "Gemini Pet",
+    "views": [
+      {
+        "path": "/",
+        "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
+        "title": "Gemini 娘桌宠"
+      }
+    ]
+  }
+}

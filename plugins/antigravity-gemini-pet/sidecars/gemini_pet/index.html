@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gemini 娘桌宠 — Antigravity</title>
+  <script src="/preload.js"></script>
+  <style>
+    :root {
+      --bg: var(--background, #f6f4ff);
+      --card: var(--card, #ffffff);
+      --fg: var(--foreground, #1e1b4b);
+      --muted: var(--muted-foreground, #6b7280);
+      --border: var(--border, rgba(109, 40, 217, 0.14));
+      --accent: #8b5cf6;
+      --pink: #ec4899;
+      --gold: #f59e0b;
+      --font: var(--font-family, system-ui, -apple-system, "Segoe UI", sans-serif);
+    }
+    :root[data-theme="dark"] {
+      --bg: var(--background, #12101f);
+      --card: var(--card, #1c1930);
+      --fg: var(--foreground, #f5f3ff);
+      --muted: var(--muted-foreground, #a5b4fc);
+      --border: var(--border, rgba(167, 139, 250, 0.2));
+    }
+    * { box-sizing: border-box; user-select: none; }
+    html, body {
+      margin: 0; padding: 0; height: 100%; overflow: hidden;
+      background: radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.16), transparent 60%), var(--bg);
+      color: var(--fg); font-family: var(--font); font-size: 13px;
+      display: flex; flex-direction: column;
+    }
+    header {
+      padding: 8px 12px; display: flex; justify-content: space-between; align-items: center;
+      background: var(--card); border-bottom: 1px solid var(--border); z-index: 10;
+    }
+    .title { font-weight: 700; display: flex; align-items: center; gap: 6px; }
+    .tag {
+      font-size: 10px; padding: 2px 7px; border-radius: 999px;
+      background: linear-gradient(135deg, rgba(139,92,246,0.18), rgba(236,72,153,0.18));
+      color: var(--accent); font-weight: 600;
+    }
+    .stats {
+      display: flex; gap: 10px; padding: 6px 12px;
+      background: color-mix(in srgb, var(--card) 75%, transparent);
+      border-bottom: 1px solid var(--border); font-size: 11.5px; align-items: center;
+    }
+    .bar-wrap { flex: 1; display: flex; align-items: center; gap: 6px; }
+    .bar { flex: 1; height: 7px; border-radius: 999px; background: var(--border); overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+    .bar-energy { background: linear-gradient(90deg, #8b5cf6, #ec4899); }
+    .bar-mood { background: linear-gradient(90deg, #f59e0b, #ec4899); }
+
+    .arena {
+      position: relative; flex: 1; overflow: hidden;
+    }
+    .sync-banner {
+      position: absolute; top: 10px; left: 12px; right: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 10px; border-radius: 10px;
+      background: color-mix(in srgb, var(--card) 85%, transparent);
+      border: 1px solid var(--border); font-size: 11.5px; color: var(--muted); z-index: 5;
+    }
+
+    /* 宠物实体 */
+    .pet-actor {
+      position: absolute; width: 152px; height: 152px;
+      cursor: grab; touch-action: none; z-index: 20;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pet-actor.dragging { cursor: grabbing; }
+    .pet-frame {
+      position: relative; width: 140px; height: 140px; border-radius: 28px;
+      padding: 5px;
+      background: linear-gradient(135deg, rgba(139,92,246,0.45), rgba(236,72,153,0.45), rgba(245,158,11,0.45));
+      box-shadow: 0 12px 28px rgba(109, 40, 217, 0.24);
+      animation: breathe 2.8s ease-in-out infinite;
+      transition: transform 0.2s ease, filter 0.3s ease;
+    }
+    .pet-actor.facing-left .pet-img { transform: scaleX(-1); }
+    .pet-actor.state-sleepy .pet-frame { filter: saturate(0.75) brightness(0.92); animation: breatheSlow 4.5s ease-in-out infinite; }
+    .pet-actor.squish .pet-frame { animation: squishPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+    .pet-img {
+      width: 100%; height: 100%; object-fit: cover; border-radius: 23px;
+      background: #ffffff; display: block; pointer-events: none;
+      transition: transform 0.22s ease;
+    }
+    .zzz {
+      position: absolute; top: -6px; right: -4px; font-weight: 800; font-size: 15px;
+      color: #8b5cf6; opacity: 0; pointer-events: none;
+    }
+    .pet-actor.state-sleepy .zzz { animation: zzzFloat 2.2s ease-in-out infinite; }
+
+    .speech {
+      position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%) translateY(6px);
+      background: var(--card); border: 1px solid var(--border); color: var(--fg);
+      padding: 6px 11px; border-radius: 14px; font-size: 12px; white-space: nowrap;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12); opacity: 0; pointer-events: none;
+      transition: all 0.22s ease;
+    }
+    .speech.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .particle {
+      position: absolute; pointer-events: none; font-size: 16px; z-index: 30;
+      animation: popUp 0.9s ease-out forwards;
+    }
+
+    @keyframes breathe {
+      0%, 100% { transform: scale(1, 1) translateY(0); }
+      50% { transform: scale(1.03, 0.97) translateY(-4px); }
+    }
+    @keyframes breatheSlow {
+      0%, 100% { transform: scale(1, 1) translateY(0); }
+      50% { transform: scale(1.02, 0.98) translateY(2px); }
+    }
+    @keyframes squishPop {
+      0% { transform: scale(1, 1); }
+      30% { transform: scale(1.18, 0.82); }
+      60% { transform: scale(0.92, 1.1); }
+      100% { transform: scale(1, 1); }
+    }
+    @keyframes zzzFloat {
+      0% { opacity: 0; transform: translate(0, 4px) scale(0.8); }
+      50% { opacity: 1; transform: translate(6px, -8px) scale(1.05); }
+      100% { opacity: 0; transform: translate(12px, -18px) scale(1.2); }
+    }
+    @keyframes popUp {
+      0% { opacity: 1; transform: translate(0, 0) scale(0.8); }
+      100% { opacity: 0; transform: translate(var(--dx), -54px) scale(1.3); }
+    }
+
+    .controls {
+      padding: 8px 10px; background: var(--card); border-top: 1px solid var(--border);
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: space-between;
+    }
+    .btn-group { display: flex; flex-wrap: wrap; gap: 5px; }
+    .btn {
+      border: 1px solid var(--border); background: var(--bg); color: var(--fg);
+      padding: 5px 9px; border-radius: 8px; cursor: pointer; font-size: 11.5px;
+      transition: all 0.15s;
+    }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn.active { background: var(--accent); color: #fff; border-color: transparent; }
+    footer {
+      text-align: center; font-size: 10.5px; color: var(--muted);
+      padding: 4px 8px; background: var(--card); border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">✨ Gemini 娘桌宠 <span class="tag">0 Token</span></div>
+    <button class="btn active" id="btn-sync">自动同步: 开</button>
+  </header>
+
+  <div class="stats">
+    <div class="bar-wrap">⚡电量 <div class="bar"><div class="bar-fill bar-energy" id="bar-energy" style="width:88%"></div></div></div>
+    <div class="bar-wrap">💖心情 <div class="bar"><div class="bar-fill bar-mood" id="bar-mood" style="width:92%"></div></div></div>
+  </div>
+
+  <div class="arena" id="arena">
+    <div class="sync-banner">
+      <span id="state-detail">连接状态同步中…</span>
+      <span id="state-badge" style="font-weight:600;color:var(--accent);">IDLE</span>
+    </div>
+
+    <div class="pet-actor" id="pet">
+      <div class="speech" id="speech">哈基米已就位！今天写什么代码呀？✨</div>
+      <div class="pet-frame">
+        <img class="pet-img" id="pet-img" src="/assets/gemini_idle.jpg" alt="Gemini 娘" />
+        <span class="zzz">Zzz</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="btn-group">
+      <button class="btn" id="act-pat">👋 摸摸头</button>
+      <button class="btn" id="act-feed">🐟 投喂小鱼干</button>
+      <button class="btn" id="act-roam">🐾 漫步: 开</button>
+    </div>
+    <div class="btn-group">
+      <button class="btn state-btn" data-state="idle">待机</button>
+      <button class="btn state-btn" data-state="thinking">听着呢</button>
+      <button class="btn state-btn" data-state="coding">敲代码</button>
+      <button class="btn state-btn" data-state="sleepy">低电量</button>
+    </div>
+  </div>
+
+  <footer>Inspired by PC2005-cloud/dsh-pet · 原创 Q 版 Gemini 娘形象 · 支持 assets/custom/ DIY 换肤</footer>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const arena = $('arena');
+    const pet = $('pet');
+    const petImg = $('pet-img');
+    const speech = $('speech');
+
+    const STATE_IMG = {
+      idle: '/assets/gemini_idle.jpg',
+      thinking: '/assets/gemini_thinking.jpg',
+      coding: '/assets/gemini_coding.jpg',
+      sleepy: '/assets/gemini_idle.jpg',
+    };
+
+    const QUOTES = {
+      pat: ['喵呜～再摸耳朵要炸毛啦！(⁄ ⁄•⁄ω⁄•⁄ ⁄)', '嘿嘿，被夸奖了，多模态能量+100%！', '本哈基米可是超自信的✨'],
+      feed: ['好吃！小鱼干真香～⚡电量回满啦！', '咔嚓咔嚓～继续帮你改 Bug！', '谢谢投喂！给你比个星芒心💖'],
+      throw: ['哇啊啊——要飞起来啦！', '轻点甩嘛，我是猫耳娘不是弹力球！(>_<)', '稳稳落地！猫科动物的优雅～'],
+      thinking: ['耳朵听着呢～正在高速运转大脑中✨', '嗯哼，让我想想最优解…'],
+      coding: ['哒哒哒！全速敲代码中⚡', '交给 Gemini 娘吧，分分钟搞定！'],
+      sleepy: ['电量偏低…好困哦…Zzz', '再不投喂小鱼干就要进入省电模式了…'],
+      idle: ['随时待命！拖我可以甩来甩去哦～', '今天也是零 Token 消耗的乖巧桌宠✨'],
+    };
+
+    let energy = 88, mood = 92;
+    let autoSync = true, roaming = true;
+    let currentState = 'idle';
+    let speechTimer = null;
+
+    function updateBars() {
+      $('bar-energy').style.width = `${Math.max(5, Math.min(100, energy))}%`;
+      $('bar-mood').style.width = `${Math.max(5, Math.min(100, mood))}%`;
+    }
+
+    function say(text, ms = 2600) {
+      speech.textContent = text;
+      speech.classList.add('show');
+      clearTimeout(speechTimer);
+      speechTimer = setTimeout(() => speech.classList.remove('show'), ms);
+    }
+
+    function spawnParticles(emojiList, count = 5) {
+      const rect = pet.getBoundingClientRect();
+      const aRect = arena.getBoundingClientRect();
+      const cx = rect.left - aRect.left + rect.width / 2;
+      const cy = rect.top - aRect.top + 28;
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement('span');
+        p.className = 'particle';
+        p.textContent = emojiList[i % emojiList.length];
+        p.style.left = `${cx + (Math.random() - 0.5) * 60}px`;
+        p.style.top = `${cy + (Math.random() - 0.5) * 20}px`;
+        p.style.setProperty('--dx', `${(Math.random() - 0.5) * 70}px`);
+        arena.appendChild(p);
+        setTimeout(() => p.remove(), 950);
+      }
+    }
+
+    function triggerSquish() {
+      pet.classList.remove('squish');
+      void pet.offsetWidth;
+      pet.classList.add('squish');
+    }
+
+    function setState(st, detail) {
+      currentState = st;
+      pet.classList.toggle('state-sleepy', st === 'sleepy');
+      petImg.src = STATE_IMG[st] || STATE_IMG.idle;
+      $('state-badge').textContent = st.toUpperCase();
+      if (detail) $('state-detail').textContent = detail;
+      if (st === 'sleepy') { energy = Math.min(energy, 28); updateBars(); }
+    }
+
+    // 2D 物理引擎：重力、拖拽惯性、投掷弹跳、自动漫步
+    let x = 80, y = 120, vx = 0, vy = 0;
+    let dragging = false, moved = false, lastPx = 0, lastPy = 0, lastTime = 0;
+    let roamDir = 1, roamPause = 0;
+
+    function clampPos() {
+      const maxX = Math.max(8, arena.clientWidth - pet.offsetWidth - 8);
+      const maxY = Math.max(48, arena.clientHeight - pet.offsetHeight - 8);
+      if (x < 8) { x = 8; vx = Math.abs(vx) * 0.65; roamDir = 1; }
+      if (x > maxX) { x = maxX; vx = -Math.abs(vx) * 0.65; roamDir = -1; }
+      if (y < 48) { y = 48; vy = Math.abs(vy) * 0.6; }
+      if (y > maxY) { y = maxY; vy = Math.abs(vy) > 2.2 ? -vy * 0.52 : 0; vx *= 0.85; }
+    }
+
+    function tick() {
+      if (!dragging) {
+        const floorY = Math.max(48, arena.clientHeight - pet.offsetHeight - 8);
+        if (y < floorY - 1 || Math.abs(vy) > 0.2) {
+          vy += 0.58; // 重力
+        } else if (roaming && currentState !== 'sleepy') {
+          if (roamPause > 0) {
+            roamPause--;
+          } else {
+            vx = roamDir * 0.75;
+            if (Math.random() < 0.008) roamPause = 90 + Math.floor(Math.random() * 120);
+            if (Math.random() < 0.004) roamDir *= -1;
+          }
+        } else {
+          vx *= 0.88;
+        }
+        x += vx;
+        y += vy;
+        clampPos();
+        if (Math.abs(vx) > 0.25) pet.classList.toggle('facing-left', vx < 0);
+      }
+      pet.style.left = `${x}px`;
+      pet.style.top = `${y}px`;
+      requestAnimationFrame(tick);
+    }
+
+    pet.addEventListener('pointerdown', (e) => {
+      dragging = true; moved = false;
+      pet.setPointerCapture(e.pointerId);
+      pet.classList.add('dragging');
+      lastPx = e.clientX; lastPy = e.clientY; lastTime = performance.now();
+      vx = 0; vy = 0;
+    });
+
+    pet.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const now = performance.now();
+      const dt = Math.max(8, now - lastTime);
+      const dx = e.clientX - lastPx;
+      const dy = e.clientY - lastPy;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+      x += dx; y += dy;
+      vx = Math.max(-18, Math.min(18, (dx / dt) * 16));
+      vy = Math.max(-18, Math.min(18, (dy / dt) * 16));
+      lastPx = e.clientX; lastPy = e.clientY; lastTime = now;
+      clampPos();
+    });
+
+    pet.addEventListener('pointerup', () => {
+      if (!dragging) return;
+      dragging = false;
+      pet.classList.remove('dragging');
+      triggerSquish();
+      if (!moved) {
+        mood = Math.min(100, mood + 4); updateBars();
+        spawnParticles(['✨', '💖', '⭐']);
+        say(QUOTES.pat[Math.floor(Math.random() * QUOTES.pat.length)]);
+      } else if (Math.hypot(vx, vy) > 5) {
+        say(QUOTES.throw[Math.floor(Math.random() * QUOTES.throw.length)]);
+      }
+    });
+
+    $('act-pat').onclick = () => {
+      mood = Math.min(100, mood + 8); updateBars();
+      triggerSquish(); spawnParticles(['💖', '✨', '🌟'], 6);
+      say(QUOTES.pat[Math.floor(Math.random() * QUOTES.pat.length)]);
+    };
+
+    $('act-feed').onclick = () => {
+      energy = Math.min(100, energy + 25); mood = Math.min(100, mood + 6); updateBars();
+      vy = -8.5; triggerSquish(); spawnParticles(['🐟', '⚡', '✨'], 6);
+      if (currentState === 'sleepy') setState('idle', '吃饱啦，恢复元气！');
+      say(QUOTES.feed[Math.floor(Math.random() * QUOTES.feed.length)]);
+    };
+
+    $('act-roam').onclick = () => {
+      roaming = !roaming;
+      $('act-roam').textContent = `🐾 漫步: ${roaming ? '开' : '关'}`;
+      $('act-roam').classList.toggle('active', roaming);
+    };
+
+    $('btn-sync').onclick = () => {
+      autoSync = !autoSync;
+      $('btn-sync').textContent = `自动同步: ${autoSync ? '开' : '关'}`;
+      $('btn-sync').classList.toggle('active', autoSync);
+    };
+
+    document.querySelectorAll('.state-btn').forEach((btn) => {
+      btn.onclick = () => {
+        autoSync = false;
+        $('btn-sync').textContent = '自动同步: 关';
+        $('btn-sync').classList.remove('active');
+        const st = btn.dataset.state;
+        const list = QUOTES[st] || QUOTES.idle;
+        setState(st, `手动切换: ${btn.textContent}`);
+        triggerSquish();
+        say(list[Math.floor(Math.random() * list.length)]);
+      };
+    });
+
+    async function pollAgentState() {
+      if (!autoSync) return;
+      try {
+        const res = await fetch('/api/state').then((r) => r.json());
+        if (res.state && res.state !== currentState) {
+          setState(res.state, res.detail);
+          const list = QUOTES[res.state] || QUOTES.idle;
+          say(list[Math.floor(Math.random() * list.length)]);
+        } else if (res.detail) {
+          $('state-detail').textContent = res.detail;
+        }
+      } catch {}
+    }
+
+    // 初始位置与循环
+    setTimeout(() => {
+      x = Math.max(16, (arena.clientWidth - 152) / 2);
+      y = Math.max(60, arena.clientHeight - 170);
+      tick();
+      pollAgentState();
+      setInterval(pollAgentState, 4000);
+    }, 60);
+  </script>
+</body>
+</html>
